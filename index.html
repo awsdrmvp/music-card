@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>毛玻璃音乐卡片</title>
+<style id="app-css">
+  :root{
+    --bg-blur: 0px;
+    --card-blur: 32px;
+    --spectrum-height: 34px;
+  }
+
+  *{ box-sizing: border-box; margin: 0; padding: 0; }
+  html, body{ height: 100%; }
+  body{
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 100px 20px 40px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    color: #fff;
+    background: #0b0e14;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bg{
+    position: fixed;
+    inset: -100px;
+    z-index: -2;
+    background: linear-gradient(140deg, #1e2d3d 0%, #3a4a5e 45%, #111822 100%);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: scale(1.04);
+    filter: blur(var(--bg-blur, 0px));
+    transition: filter .25s ease;
+  }
+  .bg::after{
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 90% at 50% 40%, rgba(0,0,0,.1), rgba(0,0,0,.7) 100%);
+  }
+
+  /* ========== 右上角控制区 ========== */
+  .top-right{
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .uploader{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    background: rgba(255,255,255,.08);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-radius: 24px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.18),
+      inset 0 1px 0 rgba(255,255,255,.30);
+    transition: box-shadow .25s ease;
+  }
+  .up{
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 13px 8px 11px;
+    font-size: 13px;
+    font-family: inherit;
+    letter-spacing: .3px;
+    color: rgba(255,255,255,.88);
+    background: rgba(255,255,255,.06);
+    cursor: pointer;
+    user-select: none;
+    transition: background .22s ease, transform .15s ease, color .22s ease, box-shadow .22s ease;
+    white-space: nowrap;
+    border: none;
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .up:hover{ background: rgba(255,255,255,.20); }
+  .up:active{ transform: scale(.97); }
+  .up input{ display: none; }
+  .up svg{ width: 15px; height: 15px; opacity: .9; flex: none; transition: transform .25s cubic-bezier(.2,.9,.3,1.3); }
+  .up.done{ background: rgba(120,220,170,.22); color: #d8ffee; }
+  .up.done svg{ transform: scale(1.1); }
+  .up.done::after{
+    content: "✓";
+    font-size: 12px;
+    margin-left: 2px;
+    animation: checkIn .35s cubic-bezier(.2,.9,.3,1.3);
+  }
+  @keyframes checkIn{
+    0%{ opacity: 0; transform: scale(.4); }
+    100%{ opacity: 1; transform: scale(1); }
+  }
+
+  .settings-wrap{ position: relative; }
+  .settings-btn{
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,.08);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    color: rgba(255,255,255,.88);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.18),
+      inset 0 1px 0 rgba(255,255,255,.30);
+    transition: background .25s ease, transform .35s cubic-bezier(.2,.9,.3,1.3);
+  }
+  .settings-btn:hover{ background: rgba(255,255,255,.20); }
+  .settings-btn:active{ transform: scale(.94); }
+  .settings-btn svg{ width: 17px; height: 17px; display: block; transition: transform .4s cubic-bezier(.2,.9,.3,1.3); }
+  .settings-btn.open{ background: rgba(255,255,255,.24); }
+  .settings-btn.open svg{ transform: rotate(90deg); }
+
+  .settings-panel{
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 240px;
+    padding: 16px 16px 14px;
+    background: rgba(255, 255, 255, 0.11);
+    backdrop-filter: blur(36px) saturate(190%);
+    -webkit-backdrop-filter: blur(36px) saturate(190%);
+    border-radius: 18px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.22),
+      inset 0 1px 0 rgba(255,255,255,.42),
+      inset 0 -4px 12px rgba(0,0,0,.08),
+      inset 0 0 60px rgba(255,255,255,.04),
+      0 20px 48px rgba(0,0,0,.45);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px) scale(.96);
+    transform-origin: top right;
+    transition: opacity .25s ease, transform .28s cubic-bezier(.2,.9,.3,1.25);
+  }
+  .settings-panel.open{
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+  .settings-title{
+    font-size: 12.5px;
+    letter-spacing: 1.2px;
+    color: rgba(255,255,255,.7);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .setting-row + .setting-row{ margin-top: 14px; }
+  .setting-head{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12.5px;
+    color: rgba(255,255,255,.92);
+    margin-bottom: 8px;
+    text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .setting-val{
+    font-size: 11.5px;
+    color: rgba(255,255,255,.7);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+
+  .settings-panel input[type="range"]{
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(255,255,255,.28);
+    outline: none;
+    cursor: pointer;
+    display: block;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.18);
+  }
+  .settings-panel input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,.45), 0 0 0 3px rgba(255,255,255,.22);
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .settings-panel input[type="range"]::-webkit-slider-thumb:hover{
+    transform: scale(1.15);
+    box-shadow: 0 2px 12px rgba(0,0,0,.55), 0 0 0 4px rgba(255,255,255,.32);
+  }
+  .settings-panel input[type="range"]::-webkit-slider-thumb:active{
+    transform: scale(1.3);
+  }
+  .settings-panel input[type="range"]::-moz-range-thumb{
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,.45), 0 0 0 3px rgba(255,255,255,.22);
+    cursor: pointer;
+    transition: transform .18s ease;
+  }
+  .settings-panel input[type="range"]::-moz-range-thumb:hover{ transform: scale(1.15); }
+  .settings-panel input[type="range"]::-moz-range-track{
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(255,255,255,.28);
+  }
+
+  .seg-toggle{
+    position: relative;
+    display: flex;
+    background: rgba(255,255,255,.10);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 3px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  }
+  .seg-slider{
+    position: absolute;
+    top: 3px;
+    left: 0;
+    height: calc(100% - 6px);
+    width: 0;
+    border-radius: 7px;
+    background: rgba(255,255,255,.28);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.28),
+      0 2px 8px rgba(0,0,0,.18);
+    pointer-events: none;
+    z-index: 0;
+    transition:
+      transform .34s cubic-bezier(.4, 0, .2, 1),
+      width     .34s cubic-bezier(.4, 0, .2, 1),
+      opacity   .2s ease;
+  }
+  .seg-opt{
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    padding: 7px 0;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,.75);
+    font-size: 12px;
+    font-family: inherit;
+    border-radius: 7px;
+    cursor: pointer;
+    text-shadow: 0 1px 2px rgba(0,0,0,.2);
+    transition: color .25s ease, transform .18s ease;
+  }
+  .seg-opt:hover{ color: #fff; }
+  .seg-opt:active{ transform: scale(.96); }
+  .seg-opt.active{ color: #fff; }
+
+  .video-modal{
+    position: fixed;
+    z-index: 100;
+    display: none;
+    background: rgba(255, 255, 255, 0.13);
+    backdrop-filter: blur(38px) saturate(200%);
+    -webkit-backdrop-filter: blur(38px) saturate(200%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.24),
+      inset 0 1px 0 rgba(255,255,255,.46),
+      inset 0 -4px 12px rgba(0,0,0,.08),
+      inset 0 0 80px rgba(255,255,255,.05),
+      0 24px 64px rgba(0,0,0,.5);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .video-modal-inner{
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 18px 18px 16px;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity .3s ease .15s;
+  }
+  .video-modal-inner.visible{ opacity: 1; }
+
+  .video-modal-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex: none;
+  }
+  .video-modal-title{
+    font-size: 14px;
+    letter-spacing: .5px;
+    color: rgba(255,255,255,.96);
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .video-modal-close{
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255,255,255,.12);
+    color: rgba(255,255,255,.85);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background .2s ease, transform .18s ease;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+  }
+  .video-modal-close:hover{ background: rgba(255,255,255,.26); }
+  .video-modal-close:active{ transform: scale(.9); }
+  .video-modal-close svg{ width: 13px; height: 13px; display: block; }
+
+  .video-modal-section + .video-modal-section{ margin-top: 14px; }
+  .video-modal-label{
+    font-size: 11.5px;
+    letter-spacing: .8px;
+    color: rgba(255,255,255,.65);
+    margin-bottom: 7px;
+    text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .video-modal .seg-opt{ font-size: 11px; padding: 8px 0; }
+
+  .video-export-btn{
+    margin-top: auto;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 14px;
+    background: rgba(255,255,255,.20);
+    color: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    letter-spacing: .4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.32),
+      inset 0 1px 0 rgba(255,255,255,.5),
+      0 8px 20px rgba(0,0,0,.2);
+    transition: background .22s ease, transform .18s ease, box-shadow .22s ease;
+  }
+  .video-export-btn:hover{
+    background: rgba(255,255,255,.30);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.4),
+      inset 0 1px 0 rgba(255,255,255,.6),
+      0 10px 24px rgba(0,0,0,.25);
+  }
+  .video-export-btn:active{ transform: scale(.97); }
+  .video-export-btn:disabled{
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .video-export-btn svg{ width: 15px; height: 15px; flex: none; }
+
+  .stage{
+    width: min(360px, 88vw);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .card{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 48px 44px;
+    border-radius: 90px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(var(--card-blur, 32px)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--card-blur, 32px)) saturate(180%);
+    transition: backdrop-filter .25s ease, -webkit-backdrop-filter .25s ease;
+    box-shadow:
+      inset 0 2px 4px rgba(255,255,255,.5),
+      inset 0 -4px 10px rgba(0,0,0,.15),
+      inset 0 0 120px rgba(255,255,255,.08);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .card::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(145deg,
+                rgba(255,255,255,.35) 0%,
+                rgba(255,255,255,.03) 40%,
+                rgba(255,255,255,.01) 60%,
+                rgba(255,255,255,.18) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .card::after{
+    content: "";
+    position: absolute;
+    width: 60%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.25), transparent 70%);
+    filter: blur(30px);
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: .6;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .album-wrap{
+    position: relative;
+    z-index: 2;
+    width: 60%;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    border-radius: 22px;
+    background: rgba(255,255,255,.1);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.35),
+      inset 0 8px 20px rgba(0,0,0,.2),
+      0 12px 28px rgba(0,0,0,.3);
+    padding: 10px;
+    margin-top: 14px;
+  }
+  .album-art{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 14px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.4);
+    display: none;
+    animation: albumIn .45s cubic-bezier(.2,.9,.3,1.2);
+  }
+  @keyframes albumIn{
+    0%{ opacity: 0; transform: scale(.92); }
+    100%{ opacity: 1; transform: scale(1); }
+  }
+  .album-placeholder{
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: rgba(255,255,255,.06);
+    color: rgba(255,255,255,.5);
+  }
+  .album-placeholder svg{ width: 36px; height: 36px; }
+
+  .progress-area{
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .spectrum-slot-card{
+    width: 100%;
+    height: var(--spectrum-height, 34px);
+    overflow: hidden;
+    transition: height .35s cubic-bezier(.4, 0, .2, 1),
+                opacity .28s ease,
+                margin .35s cubic-bezier(.4, 0, .2, 1);
+  }
+  body.spectrum-at-bottom .spectrum-slot-card{
+    height: 0;
+    opacity: 0;
+    margin: 0;
+    pointer-events: none;
+  }
+
+  .spectrum-slot-bottom{
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 5;
+    transition: height .35s cubic-bezier(.4, 0, .2, 1),
+                opacity .28s ease;
+  }
+  body.spectrum-at-bottom .spectrum-slot-bottom{
+    height: var(--spectrum-height, 34px);
+    opacity: 1;
+  }
+
+  .spectrum-canvas{
+    display: block;
+    width: 100%;
+    height: var(--spectrum-height, 34px);
+  }
+
+  .progress{
+    position: relative;
+    width: 100%;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .track{
+    position: relative;
+    width: 100%;
+    height: 5px;
+    border-radius: 99px;
+    background: rgba(255,255,255,.25);
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.2);
+    transition: background .22s ease;
+  }
+  .progress:hover .track{ background: rgba(255,255,255,.32); }
+  .fill{
+    height: 100%;
+    width: 0%;
+    border-radius: 99px;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(255,255,255,.8);
+    transition: width .06s linear;
+  }
+  .knob{
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 8px rgba(0,0,0,.5), 0 0 0 3px rgba(255,255,255,.15);
+    pointer-events: none;
+    transition: left .06s linear, transform .25s cubic-bezier(.2,.9,.3,1.3);
+  }
+  .progress:hover .knob{ transform: translate(-50%,-50%) scale(1.15); }
+  .progress:active .knob{ transform: translate(-50%,-50%) scale(1.3); }
+
+  .times{
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+    font-size: 12px;
+    letter-spacing: .5px;
+    color: rgba(255,255,255,.85);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .controls{
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+    margin-top: 0;
+  }
+  .btn-pill{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(255,255,255,.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.3),
+      inset 0 1px 0 rgba(255,255,255,.5),
+      0 6px 16px rgba(0,0,0,.2);
+    transition: transform .22s cubic-bezier(.2,.9,.3,1.3),
+                background .22s ease,
+                box-shadow .22s ease;
+  }
+  .btn-pill:hover{
+    background: rgba(255,255,255,.28);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.4),
+      inset 0 1px 0 rgba(255,255,255,.6),
+      0 8px 20px rgba(0,0,0,.25);
+  }
+  .btn-pill:active{ transform: scale(.92); }
+  .btn-pill svg{ width: 15px; height: 15px; flex: none; transition: transform .25s cubic-bezier(.2,.9,.3,1.3); }
+  .btn-pill:active svg{ transform: scale(.88); }
+
+  .btn-play{
+    position: relative;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,.18);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.4),
+      inset 0 2px 0 rgba(255,255,255,.6),
+      0 10px 28px rgba(0,0,0,.3);
+    transition: transform .22s cubic-bezier(.2,.9,.3,1.3),
+                background .22s ease,
+                box-shadow .22s ease;
+  }
+  .btn-play:hover{
+    background: rgba(255,255,255,.30);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.5),
+      inset 0 2px 0 rgba(255,255,255,.7),
+      0 12px 32px rgba(0,0,0,.35);
+  }
+  .btn-play:active{ transform: scale(.9); }
+
+  .btn-play svg{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 25px;
+    height: 25px;
+    transition: opacity .25s ease,
+                transform .3s cubic-bezier(.2,.9,.3,1.3);
+  }
+  .btn-play .icon-play{
+    transform: translate(-50%, -50%) scale(1) translateX(1px);
+    opacity: 1;
+  }
+  .btn-play .icon-pause{
+    transform: translate(-50%, -50%) scale(.5);
+    opacity: 0;
+  }
+  .btn-play.playing .icon-play{
+    transform: translate(-50%, -50%) scale(.5);
+    opacity: 0;
+  }
+  .btn-play.playing .icon-pause{
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+
+  @media (max-width: 420px){
+    body{ padding: 90px 16px 32px; }
+    .top-right{ top: 10px; right: 10px; gap: 6px; }
+    .uploader{ padding: 8px; gap: 5px; }
+    .up{ font-size: 12px; padding: 7px 11px 7px 9px; }
+    .settings-btn{ width: 34px; height: 34px; }
+    .settings-btn svg{ width: 15px; height: 15px; }
+    .settings-panel{ width: 220px; padding: 14px; }
+    .card{ padding: 20px 36px 36px; }
+    .album-wrap{ width: 58%; border-radius: 18px; padding: 8px; margin-top: 10px; }
+    .album-art, .album-placeholder{ border-radius: 11px; }
+    .album-placeholder svg{ width: 30px; height: 30px; }
+    .progress-area{ margin-top: 14px; gap: 6px; }
+    .btn-play{ width: 52px; height: 52px; }
+    .btn-play svg{ width: 22px; height: 22px; }
+    .btn-pill{ padding: 7px 13px; font-size: 12px; }
+    .btn-pill svg{ width: 13px; height: 13px; }
+    .times{ font-size: 11px; }
+    .video-modal-inner{ padding: 14px; }
+    .video-modal-title{ font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg" id="bg"></div>
+
+<div class="top-right">
+
+  <div class="uploader" id="uploader">
+    <label class="up" id="upBg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="3"/>
+        <circle cx="8.6" cy="8.6" r="1.7"/>
+        <path d="m21 15-4.6-4.6L5.2 21.2"/>
+      </svg>
+      <span>背景图片</span>
+      <input type="file" id="bgInput" accept="image/*">
+    </label>
+
+    <label class="up" id="upIcon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="4"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>专辑封面</span>
+      <input type="file" id="iconInput" accept="image/*">
+    </label>
+
+    <label class="up" id="upAudio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v13"/>
+        <path d="M8 6v9M16 6v9M4 9.5v4.5M20 9.5v4.5"/>
+      </svg>
+      <span>音频文件</span>
+      <input type="file" id="audioInput" accept="audio/*">
+    </label>
+
+    <button class="up" id="saveBtn" type="button" title="把当前上传的资源打包成一个独立 HTML 文件">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      <span>保存网页</span>
+    </button>
+
+    <button class="up" id="videoBtn" type="button" title="导出为视频">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="5" width="14" height="14" rx="2.5"/>
+        <path d="m16 10 5-3v10l-5-3"/>
+      </svg>
+      <span>保存视频</span>
+    </button>
+  </div>
+
+  <div class="settings-wrap">
+    <button class="settings-btn" id="settingsBtn" type="button" aria-label="设置" title="设置">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-title">设置</div>
+
+      <div class="setting-row">
+        <div class="setting-head">
+          <span>背景模糊</span>
+          <span class="setting-val" id="bgBlurVal">0px</span>
+        </div>
+        <input type="range" id="bgBlurInput" min="0" max="40" step="1" value="0">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-head">
+          <span>卡片模糊</span>
+          <span class="setting-val" id="cardBlurVal">32px</span>
+        </div>
+        <input type="range" id="cardBlurInput" min="0" max="60" step="1" value="32">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-head">
+          <span>频谱高度</span>
+          <span class="setting-val" id="specHeightVal">34px</span>
+        </div>
+        <input type="range" id="specHeightInput" min="16" max="100" step="1" value="34">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-head">
+          <span>频谱位置</span>
+        </div>
+        <div class="seg-toggle" id="posToggle">
+          <div class="seg-slider" id="posSlider"></div>
+          <button type="button" class="seg-opt active" data-pos="center">中心</button>
+          <button type="button" class="seg-opt" data-pos="bottom">底部</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<main class="stage">
+  <div class="card" id="card">
+    <div class="album-wrap">
+      <img class="album-art" id="albumArt" alt="">
+      <div class="album-placeholder" id="albumPlaceholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="4"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="progress-area">
+      <div class="spectrum-slot-card" id="spectrumSlotCard">
+        <canvas class="spectrum-canvas" id="spectrumCard"></canvas>
+      </div>
+
+      <div class="progress" id="progress" role="slider" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+        <div class="track"><div class="fill" id="fill"></div></div>
+        <div class="knob" id="knob"></div>
+      </div>
+      <div class="times">
+        <span id="cur">0:00</span>
+        <span id="dur">0:00</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-pill" id="back" aria-label="后退15秒">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+        <span>-15s</span>
+      </button>
+
+      <button class="btn-play" id="play" aria-label="播放/暂停">
+        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5.2c0-.9 1-1.5 1.8-1L18.5 11c.7.45.7 1.55 0 2L9.8 19.8c-.8.5-1.8-.1-1.8-1V5.2z"/>
+        </svg>
+        <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6.5" y="5" width="3.8" height="14" rx="1.6"/>
+          <rect x="13.7" y="5" width="3.8" height="14" rx="1.6"/>
+        </svg>
+      </button>
+
+      <button class="btn-pill" id="fwd" aria-label="快进15秒">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+        </svg>
+        <span>+15s</span>
+      </button>
+    </div>
+  </div>
+</main>
+
+<div class="spectrum-slot-bottom" id="spectrumSlotBottom">
+  <canvas class="spectrum-canvas" id="spectrumBottom"></canvas>
+</div>
+
+<div class="video-modal" id="videoModal">
+  <div class="video-modal-inner" id="videoModalInner">
+    <div class="video-modal-header">
+      <span class="video-modal-title">保存视频</span>
+      <button class="video-modal-close" id="videoModalClose" type="button" aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="video-modal-section">
+      <div class="video-modal-label">帧率</div>
+      <div class="seg-toggle" id="fpsGroup">
+        <div class="seg-slider"></div>
+        <button type="button" class="seg-opt" data-val="60">60帧</button>
+        <button type="button" class="seg-opt active" data-val="30">30帧</button>
+        <button type="button" class="seg-opt" data-val="25">25帧</button>
+      </div>
+    </div>
+    <div class="video-modal-section">
+      <div class="video-modal-label">分辨率</div>
+      <div class="seg-toggle" id="resGroup">
+        <div class="seg-slider"></div>
+        <button type="button" class="seg-opt" data-val="4k">4K</button>
+        <button type="button" class="seg-opt" data-val="2k">2K</button>
+        <button type="button" class="seg-opt active" data-val="1080p">1080p</button>
+        <button type="button" class="seg-opt" data-val="720p">720p</button>
+        <button type="button" class="seg-opt" data-val="480p">480p</button>
+      </div>
+    </div>
+    <button class="video-export-btn" id="videoExportBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      <span id="videoExportLabel">导出视频</span>
+    </button>
+  </div>
+</div>
+
+<audio id="audio" preload="metadata"></audio>
+
+<script id="core-js">
+/* ==========================================================
+   像素级超椭圆
+   ========================================================== */
+function squirclePath(w, h, r, N){
+  N = N || 4;
+  r = Math.min(r, w / 2, h / 2);
+  const e = 2 / N;
+  const steps = 32;
+  const pts = [];
+  for (let i = 0; i <= steps; i++){
+    const t = (i / steps) * Math.PI / 2;
+    const s = Math.pow(Math.sin(t), e);
+    const c = Math.pow(Math.cos(t), e);
+    pts.push([(w - r) + r * s, r - r * c]);
+  }
+  for (let i = 0; i <= steps; i++){
+    const t = (i / steps) * Math.PI / 2;
+    const c = Math.pow(Math.cos(t), e);
+    const s = Math.pow(Math.sin(t), e);
+    pts.push([(w - r) + r * c, (h - r) + r * s]);
+  }
+  for (let i = 0; i <= steps; i++){
+    const t = (i / steps) * Math.PI / 2;
+    const s = Math.pow(Math.sin(t), e);
+    const c = Math.pow(Math.cos(t), e);
+    pts.push([r - r * s, (h - r) + r * c]);
+  }
+  for (let i = 0; i <= steps; i++){
+    const t = (i / steps) * Math.PI / 2;
+    const c = Math.pow(Math.cos(t), e);
+    const s = Math.pow(Math.sin(t), e);
+    pts.push([r - r * c, r - r * s]);
+  }
+  let d = 'M ' + pts[0][0].toFixed(2) + ' ' + pts[0][1].toFixed(2);
+  for (let i = 1; i < pts.length; i++){
+    d += ' L ' + pts[i][0].toFixed(2) + ' ' + pts[i][1].toFixed(2);
+  }
+  d += ' Z';
+  return 'path("' + d + '")';
+}
+function applySquircle(el, N, ratio){
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const r = Math.min(rect.width, rect.height) * ratio;
+  const p = squirclePath(rect.width, rect.height, r, N);
+  el.style.clipPath = p;
+  el.style.webkitClipPath = p;
+}
+const cardEl = document.getElementById('card');
+function applyAllSquircles(){
+  applySquircle(cardEl, 4, 0.26);
+}
+if ('ResizeObserver' in window){
+  const ro = new ResizeObserver(applyAllSquircles);
+  ro.observe(cardEl);
+}
+window.addEventListener('resize', applyAllSquircles);
+window.addEventListener('orientationchange', function(){ setTimeout(applyAllSquircles, 120); });
+requestAnimationFrame(function(){
+  applyAllSquircles();
+  requestAnimationFrame(applyAllSquircles);
+});
+setTimeout(applyAllSquircles, 250);
+
+/* ==========================================================
+   通用分段控件（支持 onChange 回调）
+   ========================================================== */
+function syncSegmented(container){
+  if (!container) return;
+  const slider = container.querySelector('.seg-slider');
+  const active = container.querySelector('.seg-opt.active') || container.querySelector('.seg-opt');
+  if (!slider || !active) return;
+
+  const prevTrans = slider.style.transition;
+  slider.style.transition = 'none';
+  slider.style.width = active.offsetWidth + 'px';
+  slider.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+  void slider.offsetWidth;
+  slider.style.transition = prevTrans || '';
+}
+
+/* onChange(btn, container) 会在选中变化时调用 */
+function bindSegmented(container, onChange){
+  if (!container) return;
+  /* 如果已绑定过，更新回调后直接返回 */
+  if (container.__segBound){
+    if (typeof onChange === 'function') container.__segOnChange = onChange;
+    return;
+  }
+  container.__segBound = true;
+  if (typeof onChange === 'function') container.__segOnChange = onChange;
+
+  container.addEventListener('click', function(e){
+    const btn = e.target.closest('.seg-opt');
+    if (!btn || btn.classList.contains('active')) return;
+    container.querySelectorAll('.seg-opt').forEach(function(b){
+      b.classList.toggle('active', b === btn);
+    });
+    const slider = container.querySelector('.seg-slider');
+    if (slider){
+      slider.style.width = btn.offsetWidth + 'px';
+      slider.style.transform = 'translateX(' + btn.offsetLeft + 'px)';
+    }
+    /* 触发用户回调 */
+    if (typeof container.__segOnChange === 'function'){
+      container.__segOnChange(btn, container);
+    }
+  });
+}
+
+/* ==========================================================
+   保存视频弹窗
+   ========================================================== */
+(function initVideoModal(){
+  const videoBtn = document.getElementById('videoBtn');
+  const modal = document.getElementById('videoModal');
+  const inner = document.getElementById('videoModalInner');
+  const closeBtn = document.getElementById('videoModalClose');
+  const fpsGroup = document.getElementById('fpsGroup');
+  const resGroup = document.getElementById('resGroup');
+  const exportBtn = document.getElementById('videoExportBtn');
+  const exportLabel = document.getElementById('videoExportLabel');
+
+  if (!videoBtn || !modal || !inner) return;
+
+  bindSegmented(fpsGroup);
+  bindSegmented(resGroup);
+
+  let isOpen = false;
+  let isExporting = false;
+  let openTimers = [];
+
+  function clearTimers(){
+    openTimers.forEach(function(t){ clearTimeout(t); });
+    openTimers = [];
+  }
+
+  function resetSliders(){
+    [fpsGroup, resGroup].forEach(function(g){
+      if (!g) return;
+      const s = g.querySelector('.seg-slider');
+      if (!s) return;
+      s.style.transition = 'none';
+      s.style.width = '0px';
+      s.style.opacity = '0';
+    });
+  }
+
+  function showSliders(){
+    [fpsGroup, resGroup].forEach(function(g){
+      if (!g) return;
+      const s = g.querySelector('.seg-slider');
+      if (!s) return;
+      s.style.transition = '';
+      s.style.opacity = '1';
+    });
+    syncSegmented(fpsGroup);
+    syncSegmented(resGroup);
+  }
+
+  function openModal(){
+    if (isOpen || isExporting) return;
+    isOpen = true;
+    clearTimers();
+
+    const rect = videoBtn.getBoundingClientRect();
+
+    const finalW = Math.min(340, window.innerWidth * 0.88);
+    const finalH = 320;
+    const finalX = (window.innerWidth - finalW) / 2;
+    const finalY = (window.innerHeight - finalH) / 2;
+
+    modal.style.transition = 'none';
+    modal.style.display = 'block';
+    modal.style.left = rect.left + 'px';
+    modal.style.top = rect.top + 'px';
+    modal.style.width = rect.width + 'px';
+    modal.style.height = rect.height + 'px';
+    modal.style.borderRadius = '999px';
+    modal.style.opacity = '0';
+    inner.classList.remove('visible');
+
+    resetSliders();
+
+    void modal.offsetWidth;
+
+    modal.style.transition =
+      'left .55s cubic-bezier(.4,0,.2,1),' +
+      'top .55s cubic-bezier(.4,0,.2,1),' +
+      'width .55s cubic-bezier(.4,0,.2,1),' +
+      'height .55s cubic-bezier(.4,0,.2,1),' +
+      'opacity .3s ease,' +
+      'border-radius .5s ease';
+
+    modal.style.left = finalX + 'px';
+    modal.style.top = finalY + 'px';
+    modal.style.width = finalW + 'px';
+    modal.style.height = finalH + 'px';
+    modal.style.borderRadius = '24px';
+    modal.style.opacity = '1';
+
+    openTimers.push(setTimeout(function(){
+      inner.classList.add('visible');
+    }, 380));
+
+    openTimers.push(setTimeout(function(){
+      showSliders();
+    }, 620));
+  }
+
+  function closeModal(){
+    if (!isOpen || isExporting) return;
+    isOpen = false;
+    clearTimers();
+
+    const rect = videoBtn.getBoundingClientRect();
+    inner.classList.remove('visible');
+
+    modal.style.transition =
+      'left .5s cubic-bezier(.4,0,.2,1),' +
+      'top .5s cubic-bezier(.4,0,.2,1),' +
+      'width .5s cubic-bezier(.4,0,.2,1),' +
+      'height .5s cubic-bezier(.4,0,.2,1),' +
+      'opacity .35s ease .15s,' +
+      'border-radius .5s ease';
+
+    modal.style.left = rect.left + 'px';
+    modal.style.top = rect.top + 'px';
+    modal.style.width = rect.width + 'px';
+    modal.style.height = rect.height + 'px';
+    modal.style.borderRadius = '999px';
+    modal.style.opacity = '0';
+
+    openTimers.push(setTimeout(function(){
+      if (!isOpen){
+        modal.style.display = 'none';
+      }
+    }, 700));
+  }
+
+  videoBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    openModal();
+  });
+
+  closeBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    closeModal();
+  });
+
+  document.addEventListener('click', function(e){
+    if (!isOpen || isExporting) return;
+    if (e.target.closest('#videoModal') || e.target.closest('#videoBtn')) return;
+    closeModal();
+  });
+
+  window.addEventListener('resize', function(){
+    if (!isOpen) return;
+    const finalW = Math.min(340, window.innerWidth * 0.88);
+    const finalH = 320;
+    modal.style.transition = 'none';
+    modal.style.left = ((window.innerWidth - finalW) / 2) + 'px';
+    modal.style.top = ((window.innerHeight - finalH) / 2) + 'px';
+    modal.style.width = finalW + 'px';
+    modal.style.height = finalH + 'px';
+    setTimeout(showSliders, 60);
+  });
+
+  /* 导出按钮（功能保留，未实现具体录制） */
+  if (exportBtn){
+    exportBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      alert('视频导出功能开发中，敬请期待。');
+    });
+  }
+})();
+
+/* ==========================================================
+   设置面板
+   ========================================================== */
+(function initSettings(){
+  const settingsBtn     = document.getElementById('settingsBtn');
+  const settingsPanel   = document.getElementById('settingsPanel');
+  const bgBlurInput     = document.getElementById('bgBlurInput');
+  const cardBlurInput   = document.getElementById('cardBlurInput');
+  const specHeightInput = document.getElementById('specHeightInput');
+  const bgBlurVal       = document.getElementById('bgBlurVal');
+  const cardBlurVal     = document.getElementById('cardBlurVal');
+  const specHeightVal   = document.getElementById('specHeightVal');
+  const posToggle       = document.getElementById('posToggle');
+
+  if (!settingsBtn || !settingsPanel) return;
+
+  const root = document.documentElement;
+
+  const initBg   = parseInt(root.style.getPropertyValue('--bg-blur'))         || 0;
+  const initCard = parseInt(root.style.getPropertyValue('--card-blur'))       || 32;
+  const initSpec = parseInt(root.style.getPropertyValue('--spectrum-height')) || 34;
+
+  root.style.setProperty('--bg-blur',         initBg + 'px');
+  root.style.setProperty('--card-blur',       initCard + 'px');
+  root.style.setProperty('--spectrum-height', initSpec + 'px');
+
+  bgBlurInput.value       = initBg;
+  bgBlurVal.textContent   = initBg + 'px';
+  cardBlurInput.value     = initCard;
+  cardBlurVal.textContent = initCard + 'px';
+  specHeightInput.value   = initSpec;
+  specHeightVal.textContent = initSpec + 'px';
+
+  const initialPos = document.body.classList.contains('spectrum-at-bottom') ? 'bottom' : 'center';
+  posToggle.querySelectorAll('.seg-opt').forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.pos === initialPos);
+  });
+
+  /* 【关键修复】绑定分段控件时传入回调，一次处理所有逻辑
+     不再额外 addEventListener，避免事件执行顺序冲突 */
+  bindSegmented(posToggle, function(btn){
+    if (btn.dataset.pos === 'bottom'){
+      document.body.classList.add('spectrum-at-bottom');
+    } else {
+      document.body.classList.remove('spectrum-at-bottom');
+    }
+  });
+
+  function syncPosSlider(){
+    syncSegmented(posToggle);
+  }
+
+  requestAnimationFrame(syncPosSlider);
+  setTimeout(syncPosSlider, 250);
+  window.addEventListener('resize', syncPosSlider);
+  window.addEventListener('orientationchange', function(){ setTimeout(syncPosSlider, 120); });
+
+  settingsBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    settingsPanel.classList.toggle('open');
+    settingsBtn.classList.toggle('open');
+    requestAnimationFrame(syncPosSlider);
+    setTimeout(syncPosSlider, 320);
+  });
+  document.addEventListener('click', function(e){
+    if (!e.target.closest('.settings-wrap')){
+      settingsPanel.classList.remove('open');
+      settingsBtn.classList.remove('open');
+    }
+  });
+
+  bgBlurInput.addEventListener('input', function(){
+    const v = bgBlurInput.value;
+    root.style.setProperty('--bg-blur', v + 'px');
+    bgBlurVal.textContent = v + 'px';
+  });
+  cardBlurInput.addEventListener('input', function(){
+    const v = cardBlurInput.value;
+    root.style.setProperty('--card-blur', v + 'px');
+    cardBlurVal.textContent = v + 'px';
+  });
+  specHeightInput.addEventListener('input', function(){
+    const v = specHeightInput.value;
+    root.style.setProperty('--spectrum-height', v + 'px');
+    specHeightVal.textContent = v + 'px';
+  });
+})();
+
+/* ==========================================================
+   播放器
+   ========================================================== */
+const audio = document.getElementById('audio');
+const progress = document.getElementById('progress');
+const fillEl = document.getElementById('fill');
+const knobEl = document.getElementById('knob');
+const curEl = document.getElementById('cur');
+const durEl = document.getElementById('dur');
+const playBtn = document.getElementById('play');
+const backBtn = document.getElementById('back');
+const fwdBtn  = document.getElementById('fwd');
+
+if (typeof window.__AUDIO_DATA_URL__ === 'string' && window.__AUDIO_DATA_URL__){
+  try {
+    var _parts = window.__AUDIO_DATA_URL__.split(',');
+    var _mimeMatch = _parts[0].match(/:(.*?);/);
+    var _mime = _mimeMatch ? _mimeMatch[1] : 'audio/mpeg';
+    var _bin = atob(_parts[1]);
+    var _bytes = new Uint8Array(_bin.length);
+    for (var _i = 0; _i < _bin.length; _i++) _bytes[_i] = _bin.charCodeAt(_i);
+    var _blob = new Blob([_bytes], { type: _mime });
+    audio.src = URL.createObjectURL(_blob);
+    audio.load();
+  } catch (err) {
+    console.error('音频初始化失败:', err);
+  }
+}
+
+function fmt(sec){
+  if (!isFinite(sec) || sec < 0) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+playBtn.addEventListener('click', function(){
+  if (!audio.src) return;
+  initAudioCtx();
+  if (audio.paused) {
+    audio.play().catch(function(err){
+      console.error('播放失败:', err);
+    });
+  } else {
+    audio.pause();
+  }
+});
+
+audio.addEventListener('play', function(){
+  playBtn.classList.add('playing');
+  cardEl.classList.add('playing');
+  initAudioCtx();
+});
+audio.addEventListener('pause', function(){
+  playBtn.classList.remove('playing');
+  cardEl.classList.remove('playing');
+});
+audio.addEventListener('ended', function(){
+  playBtn.classList.remove('playing');
+  cardEl.classList.remove('playing');
+});
+
+backBtn.addEventListener('click', function(){
+  if (!audio.duration) return;
+  audio.currentTime = Math.max(0, audio.currentTime - 15);
+  render();
+});
+fwdBtn.addEventListener('click', function(){
+  if (!audio.duration) return;
+  audio.currentTime = Math.min(audio.duration, audio.currentTime + 15);
+  render();
+});
+
+let isSeeking = false;
+function render(){
+  const d = audio.duration || 0;
+  const c = audio.currentTime || 0;
+  const p = d > 0 ? (c / d) * 100 : 0;
+  fillEl.style.width = p + '%';
+  knobEl.style.left  = p + '%';
+  curEl.textContent  = fmt(c);
+  durEl.textContent  = fmt(d);
+  progress.setAttribute('aria-valuenow', Math.round(p));
+}
+function seekFromEvent(e){
+  const rect = progress.getBoundingClientRect();
+  const x = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
+  const ratio = rect.width ? x / rect.width : 0;
+  if (audio.duration) audio.currentTime = ratio * audio.duration;
+  fillEl.style.width = (ratio * 100) + '%';
+  knobEl.style.left  = (ratio * 100) + '%';
+  curEl.textContent  = fmt(ratio * (audio.duration || 0));
+}
+progress.addEventListener('pointerdown', function(e){
+  if (!audio.duration) return;
+  isSeeking = true;
+  progress.setPointerCapture(e.pointerId);
+  seekFromEvent(e);
+});
+progress.addEventListener('pointermove', function(e){
+  if (isSeeking) seekFromEvent(e);
+});
+function endSeek(e){
+  if (!isSeeking) return;
+  isSeeking = false;
+  try { progress.releasePointerCapture(e.pointerId); } catch(_){}
+}
+progress.addEventListener('pointerup', endSeek);
+progress.addEventListener('pointercancel', endSeek);
+progress.addEventListener('keydown', function(e){
+  if (!audio.duration) return;
+  if (e.key === 'ArrowLeft'){ audio.currentTime = Math.max(0, audio.currentTime - 5); render(); }
+  if (e.key === 'ArrowRight'){ audio.currentTime = Math.min(audio.duration, audio.currentTime + 5); render(); }
+  e.preventDefault();
+});
+
+function loop(){
+  if (!isSeeking && !audio.paused) render();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+audio.addEventListener('loadedmetadata', render);
+audio.addEventListener('durationchange', render);
+audio.addEventListener('timeupdate', function(){ if (!isSeeking) render(); });
+
+document.addEventListener('keydown', function(e){
+  if (e.code === 'Space' && e.target === document.body){
+    e.preventDefault();
+    playBtn.click();
+  }
+});
+['dragover', 'drop'].forEach(function(evt){
+  window.addEventListener(evt, function(e){ e.preventDefault(); });
+});
+
+render();
+
+/* ==========================================================
+   频谱分析
+   ========================================================== */
+const spectrumCanvases = [
+  document.getElementById('spectrumCard'),
+  document.getElementById('spectrumBottom')
+].filter(Boolean);
+
+let audioCtx = null;
+let analyser = null;
+let sourceNode = null;
+let freqData = null;
+
+function initAudioCtx(){
+  if (audioCtx) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return;
+  }
+  if (!audio) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = new AC();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 4096;
+    analyser.smoothingTimeConstant = 0.78;
+    analyser.minDecibels = -95;
+    analyser.maxDecibels = -12;
+    sourceNode = audioCtx.createMediaElementSource(audio);
+    sourceNode.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    freqData = new Uint8Array(analyser.frequencyBinCount);
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (err) {
+    console.warn('AudioContext 初始化失败:', err);
+    audioCtx = null;
+  }
+}
+
+function syncSpectrumSizes(){
+  const dpr = window.devicePixelRatio || 1;
+  spectrumCanvases.forEach(function(c){
+    const rect = c.getBoundingClientRect();
+    const w = Math.max(1, Math.round(rect.width  * dpr));
+    const h = Math.max(1, Math.round(rect.height * dpr));
+    if (c.width !== w || c.height !== h){
+      c.width  = w;
+      c.height = h;
+    }
+  });
+}
+if (spectrumCanvases.length){
+  if ('ResizeObserver' in window){
+    const roS = new ResizeObserver(syncSpectrumSizes);
+    spectrumCanvases.forEach(function(c){ roS.observe(c); });
+  }
+  window.addEventListener('resize', syncSpectrumSizes);
+  window.addEventListener('orientationchange', function(){ setTimeout(syncSpectrumSizes, 120); });
+  syncSpectrumSizes();
+}
+
+function pxPerMm(){
+  const dpr = window.devicePixelRatio || 1;
+  return (96 / 25.4) * dpr;
+}
+
+function roundRectPath(ctx, x, y, w, h, r){
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function drawSpectrum(){
+  if (!spectrumCanvases.length){
+    requestAnimationFrame(drawSpectrum);
+    return;
+  }
+
+  let data = null;
+  if (analyser && freqData){
+    analyser.getByteFrequencyData(freqData);
+    data = freqData;
+  }
+
+  spectrumCanvases.forEach(function(canvas){
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    if (!ctx || W < 2 || H < 2) return;
+    ctx.clearRect(0, 0, W, H);
+    drawBars(ctx, W, H, data);
+  });
+
+  requestAnimationFrame(drawSpectrum);
+}
+
+function drawBars(ctx, W, H, data){
+  const mm = pxPerMm();
+  const barW  = 1.0 * mm;
+  const gapW  = 0.5 * mm;
+  const period = barW + gapW;
+
+  let N = Math.max(8, Math.floor((W + gapW) / period));
+  const realPeriod = W / N;
+  const actualGap  = realPeriod * (gapW / period);
+  const actualBarW = realPeriod - actualGap;
+
+  const fMin = 20, fMax = 20000;
+  const logMin = Math.log10(fMin), logMax = Math.log10(fMax);
+
+  const sampleRate = audioCtx ? audioCtx.sampleRate : 44100;
+  const nyquist = sampleRate / 2;
+  const binCount = analyser ? analyser.frequencyBinCount : 2048;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+  const dpr = window.devicePixelRatio || 1;
+  ctx.lineWidth = Math.max(0.5, 0.6 * dpr);
+
+  const minBarH = actualBarW;
+  const cornerR = actualBarW / 2;
+
+  for (let i = 0; i < N; i++){
+    const tL = i / N;
+    const tR = (i + 1) / N;
+    const fL = Math.pow(10, logMin + (logMax - logMin) * tL);
+    const fR = Math.pow(10, logMin + (logMax - logMin) * tR);
+
+    let v = 0;
+    if (data){
+      let binL = Math.floor(fL / nyquist * binCount);
+      let binR = Math.ceil(fR  / nyquist * binCount);
+      binL = Math.max(0, Math.min(binCount - 1, binL));
+      binR = Math.max(binL + 1, Math.min(binCount, binR));
+      for (let b = binL; b < binR; b++){
+        if (data[b] > v) v = data[b];
+      }
+    }
+
+    const norm = v / 255;
+    const h = Math.max(minBarH, norm * (H - 2) * 0.98);
+
+    const x = i * realPeriod + actualGap / 2;
+    const y = H - h;
+
+    roundRectPath(ctx, x, y, actualBarW, h, cornerR);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+requestAnimationFrame(drawSpectrum);
+</script>
+
+<script>
+/* ==========================================================
+   上传与保存逻辑（不会进入保存的 HTML）
+   ========================================================== */
+const bgEl        = document.getElementById('bg');
+const albumArt    = document.getElementById('albumArt');
+const placeholder = document.getElementById('albumPlaceholder');
+const bgInput     = document.getElementById('bgInput');
+const iconInput   = document.getElementById('iconInput');
+const audioInput  = document.getElementById('audioInput');
+const saveBtn     = document.getElementById('saveBtn');
+
+const state = { bg: null, icon: null, audio: null };
+
+function readAsDataURL(file){
+  return new Promise(function(resolve, reject){
+    const r = new FileReader();
+    r.onload = function(){ resolve(r.result); };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function blobToDataURL(blob){
+  return new Promise(function(resolve){
+    const r = new FileReader();
+    r.onload = function(){ resolve(r.result); };
+    r.onerror = function(){ resolve(null); };
+    r.readAsDataURL(blob);
+  });
+}
+
+function validateImage(dataUrl){
+  return new Promise(function(resolve){
+    if (!dataUrl || typeof dataUrl !== 'string'){ resolve(false); return; }
+    const img = new Image();
+    img.onload = function(){
+      resolve(img.naturalWidth >= 8 && img.naturalHeight >= 8);
+    };
+    img.onerror = function(){ resolve(false); };
+    img.src = dataUrl;
+  });
+}
+
+function readMimeString(view, start, end){
+  let s = '';
+  for (let i = start; i < end; i++){
+    const c = view[i];
+    if (c === 0) break;
+    s += String.fromCharCode(c);
+  }
+  return s;
+}
+
+async function extractCoverFromAudio(file){
+  try {
+    const buf = await file.arrayBuffer();
+    const view = new Uint8Array(buf);
+
+    if (view.length < 10) return null;
+    if (view[0] !== 0x49 || view[1] !== 0x44 || view[2] !== 0x33) return null;
+
+    const version = view[3];
+    if (version < 2 || version > 4) return null;
+
+    const flags = view[5];
+    const tagSize =
+      ((view[6] & 0x7f) << 21) |
+      ((view[7] & 0x7f) << 14) |
+      ((view[8] & 0x7f) << 7)  |
+       (view[9] & 0x7f);
+    const tagEnd = Math.min(10 + tagSize, view.length);
+
+    let offset = 10;
+
+    if ((version === 3 || version === 4) && (flags & 0x40)){
+      if (offset + 4 > tagEnd) return null;
+      if (version === 4){
+        const extSize =
+          ((view[offset]   & 0x7f) << 21) |
+          ((view[offset+1] & 0x7f) << 14) |
+          ((view[offset+2] & 0x7f) << 7)  |
+           (view[offset+3] & 0x7f);
+        offset += Math.max(4, extSize);
+      } else {
+        const extSize =
+          ((view[offset]   & 0xff) << 24) |
+          ((view[offset+1] & 0xff) << 16) |
+          ((view[offset+2] & 0xff) << 8)  |
+           (view[offset+3] & 0xff);
+        offset += 4 + (extSize >>> 0);
+      }
+    }
+
+    if (offset >= tagEnd) return null;
+
+    if (version === 2){
+      while (offset + 6 <= tagEnd){
+        const id = String.fromCharCode(view[offset], view[offset+1], view[offset+2]);
+        if (id === '\0\0\0') break;
+        const frameSize =
+          (view[offset+3] << 16) |
+          (view[offset+4] << 8)  |
+           view[offset+5];
+        if (frameSize <= 0 || offset + 6 + frameSize > view.length) break;
+        if (id === 'PIC'){
+          const cover = await parseAPIC(view, offset + 6, frameSize);
+          if (cover) return cover;
+        }
+        offset += 6 + frameSize;
+      }
+    } else if (version === 3 || version === 4){
+      while (offset + 10 <= tagEnd){
+        const id =
+          String.fromCharCode(view[offset]) +
+          String.fromCharCode(view[offset+1]) +
+          String.fromCharCode(view[offset+2]) +
+          String.fromCharCode(view[offset+3]);
+        if (id === '\0\0\0\0') break;
+
+        let frameSize;
+        if (version === 4){
+          frameSize =
+            ((view[offset+4] & 0x7f) << 21) |
+            ((view[offset+5] & 0x7f) << 14) |
+            ((view[offset+6] & 0x7f) << 7)  |
+             (view[offset+7] & 0x7f);
+        } else {
+          frameSize =
+            ((view[offset+4] & 0xff) << 24) |
+            ((view[offset+5] & 0xff) << 16) |
+            ((view[offset+6] & 0xff) << 8)  |
+             (view[offset+7] & 0xff);
+          frameSize = frameSize >>> 0;
+        }
+
+        if (frameSize <= 0 || offset + 10 + frameSize > view.length) break;
+
+        if (id === 'APIC'){
+          const cover = await parseAPIC(view, offset + 10, frameSize);
+          if (cover) return cover;
+        }
+        offset += 10 + frameSize;
+      }
+    }
+
+    return null;
+  } catch (e){
+    console.warn('封面提取失败:', e);
+    return null;
+  }
+}
+
+async function parseAPIC(view, start, size){
+  try {
+    const end = Math.min(start + size, view.length);
+    if (start + 4 >= end) return null;
+
+    const encoding = view[start];
+    let offset = start + 1;
+
+    let mimeEnd = offset;
+    while (mimeEnd < end && view[mimeEnd] !== 0) mimeEnd++;
+    let mime = '';
+    if (mimeEnd > offset){
+      mime = readMimeString(view, offset, mimeEnd).trim();
+    }
+    if (!mime || mime.indexOf('/') === -1) mime = 'image/jpeg';
+    offset = mimeEnd + 1;
+
+    offset += 1;
+
+    if (encoding === 1 || encoding === 2){
+      while (offset < end - 1){
+        if (view[offset] === 0 && view[offset+1] === 0){ offset += 2; break; }
+        offset += 2;
+      }
+    } else {
+      while (offset < end && view[offset] !== 0) offset++;
+      offset += 1;
+    }
+
+    if (offset >= end) return null;
+
+    const imageData = view.subarray(offset, end);
+    if (imageData.length < 200) return null;
+
+    const blob = new Blob([imageData], { type: mime });
+    const dataUrl = await blobToDataURL(blob);
+    if (!dataUrl) return null;
+
+    const ok = await validateImage(dataUrl);
+    if (!ok) return null;
+
+    return dataUrl;
+  } catch (e){
+    return null;
+  }
+}
+
+bgInput.addEventListener('change', async function(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  state.bg = await readAsDataURL(file);
+  bgEl.style.backgroundImage = 'url("' + state.bg + '")';
+  document.getElementById('upBg').classList.add('done');
+});
+
+iconInput.addEventListener('change', async function(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  state.icon = await readAsDataURL(file);
+  albumArt.src = state.icon;
+  albumArt.style.display = 'block';
+  placeholder.style.display = 'none';
+  document.getElementById('upIcon').classList.add('done');
+});
+
+audioInput.addEventListener('change', async function(e){
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const embeddedCover = await extractCoverFromAudio(file);
+  if (embeddedCover){
+    state.icon = embeddedCover;
+    albumArt.src = embeddedCover;
+    albumArt.style.display = 'block';
+    placeholder.style.display = 'none';
+    document.getElementById('upIcon').classList.add('done');
+  }
+
+  state.audio = await readAsDataURL(file);
+  audio.src = state.audio;
+  audio.load();
+  document.getElementById('upAudio').classList.add('done');
+  audio.play().catch(function(){});
+});
+
+saveBtn.addEventListener('click', async function(){
+  if (!state.bg && !state.icon && !state.audio){
+    alert('请先上传背景、封面或音频，再保存网页。');
+    return;
+  }
+
+  const originalText = saveBtn.querySelector('span').textContent;
+  saveBtn.querySelector('span').textContent = '正在打包…';
+  saveBtn.disabled = true;
+
+  try {
+    const css = document.getElementById('app-css').textContent;
+    const coreJS = document.getElementById('core-js').textContent;
+
+    const bgBlur   = document.documentElement.style.getPropertyValue('--bg-blur')         || '0px';
+    const cardBlur = document.documentElement.style.getPropertyValue('--card-blur')       || '32px';
+    const specHeight = document.documentElement.style.getPropertyValue('--spectrum-height') || '34px';
+
+    const spectrumPos = document.body.classList.contains('spectrum-at-bottom') ? 'bottom' : 'center';
+    const bodyClass = spectrumPos === 'bottom' ? ' class="spectrum-at-bottom"' : '';
+
+    const rootStyleAttr =
+      '--bg-blur:' + bgBlur + '; ' +
+      '--card-blur:' + cardBlur + '; ' +
+      '--spectrum-height:' + specHeight + ';';
+
+    const bgStyle = state.bg
+      ? 'background-image: url(\'' + state.bg + '\');'
+      : '';
+
+    let albumHTML;
+    if (state.icon){
+      albumHTML = '<img class="album-art" id="albumArt" alt="" src="' + state.icon + '" style="display:block">';
+    } else {
+      albumHTML =
+        '<img class="album-art" id="albumArt" alt="">' +
+        '<div class="album-placeholder" id="albumPlaceholder">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+            '<rect x="3" y="3" width="18" height="18" rx="4"/>' +
+            '<circle cx="12" cy="12" r="3"/>' +
+          '</svg>' +
+        '</div>';
+    }
+
+    const audioDataScript = state.audio
+      ? '<script>window.__AUDIO_DATA_URL__=' + JSON.stringify(state.audio) + ';<\/script>\n'
+      : '';
+
+    const activeCenter = spectrumPos === 'center' ? ' active' : '';
+    const activeBottom = spectrumPos === 'bottom' ? ' active' : '';
+
+    const html =
+'<!DOCTYPE html>\n' +
+'<html lang="zh-CN" style="' + rootStyleAttr + '">\n' +
+'<head>\n' +
+'<meta charset="UTF-8">\n' +
+'<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' +
+'<title>毛玻璃音乐卡片</title>\n' +
+'<style>' + css + '</style>\n' +
+'</head>\n' +
+'<body' + bodyClass + '>\n' +
+'\n' +
+'<div class="bg" id="bg" style="' + bgStyle + '"></div>\n' +
+'\n' +
+'<div class="top-right">\n' +
+'  <div class="settings-wrap">\n' +
+'    <button class="settings-btn" id="settingsBtn" type="button" aria-label="设置" title="设置">\n' +
+'      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">\n' +
+'        <circle cx="12" cy="12" r="3"/>\n' +
+'        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>\n' +
+'      </svg>\n' +
+'    </button>\n' +
+'    <div class="settings-panel" id="settingsPanel">\n' +
+'      <div class="settings-title">设置</div>\n' +
+'      <div class="setting-row">\n' +
+'        <div class="setting-head">\n' +
+'          <span>背景模糊</span>\n' +
+'          <span class="setting-val" id="bgBlurVal">' + parseInt(bgBlur) + 'px</span>\n' +
+'        </div>\n' +
+'        <input type="range" id="bgBlurInput" min="0" max="40" step="1" value="' + parseInt(bgBlur) + '">\n' +
+'      </div>\n' +
+'      <div class="setting-row">\n' +
+'        <div class="setting-head">\n' +
+'          <span>卡片模糊</span>\n' +
+'          <span class="setting-val" id="cardBlurVal">' + parseInt(cardBlur) + 'px</span>\n' +
+'        </div>\n' +
+'        <input type="range" id="cardBlurInput" min="0" max="60" step="1" value="' + parseInt(cardBlur) + '">\n' +
+'      </div>\n' +
+'      <div class="setting-row">\n' +
+'        <div class="setting-head">\n' +
+'          <span>频谱高度</span>\n' +
+'          <span class="setting-val" id="specHeightVal">' + parseInt(specHeight) + 'px</span>\n' +
+'        </div>\n' +
+'        <input type="range" id="specHeightInput" min="16" max="100" step="1" value="' + parseInt(specHeight) + '">\n' +
+'      </div>\n' +
+'      <div class="setting-row">\n' +
+'        <div class="setting-head">\n' +
+'          <span>频谱位置</span>\n' +
+'        </div>\n' +
+'        <div class="seg-toggle" id="posToggle">\n' +
+'          <div class="seg-slider" id="posSlider"></div>\n' +
+'          <button type="button" class="seg-opt' + activeCenter + '" data-pos="center">中心</button>\n' +
+'          <button type="button" class="seg-opt' + activeBottom + '" data-pos="bottom">底部</button>\n' +
+'        </div>\n' +
+'      </div>\n' +
+'    </div>\n' +
+'  </div>\n' +
+'</div>\n' +
+'\n' +
+'<main class="stage">\n' +
+'  <div class="card" id="card">\n' +
+'    <div class="album-wrap">\n' +
+'      ' + albumHTML + '\n' +
+'    </div>\n' +
+'\n' +
+'    <div class="progress-area">\n' +
+'      <div class="spectrum-slot-card" id="spectrumSlotCard">\n' +
+'        <canvas class="spectrum-canvas" id="spectrumCard"></canvas>\n' +
+'      </div>\n' +
+'\n' +
+'      <div class="progress" id="progress" role="slider" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">\n' +
+'        <div class="track"><div class="fill" id="fill"></div></div>\n' +
+'        <div class="knob" id="knob"></div>\n' +
+'      </div>\n' +
+'      <div class="times">\n' +
+'        <span id="cur">0:00</span>\n' +
+'        <span id="dur">0:00</span>\n' +
+'      </div>\n' +
+'    </div>\n' +
+'\n' +
+'    <div class="controls">\n' +
+'      <button class="btn-pill" id="back" aria-label="后退15秒">\n' +
+'        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\n' +
+'          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>\n' +
+'          <path d="M3 3v5h5"/>\n' +
+'        </svg>\n' +
+'        <span>-15s</span>\n' +
+'      </button>\n' +
+'\n' +
+'      <button class="btn-play" id="play" aria-label="播放/暂停">\n' +
+'        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor">\n' +
+'          <path d="M8 5.2c0-.9 1-1.5 1.8-1L18.5 11c.7.45.7 1.55 0 2L9.8 19.8c-.8.5-1.8-.1-1.8-1V5.2z"/>\n' +
+'        </svg>\n' +
+'        <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor">\n' +
+'          <rect x="6.5" y="5" width="3.8" height="14" rx="1.6"/>\n' +
+'          <rect x="13.7" y="5" width="3.8" height="14" rx="1.6"/>\n' +
+'        </svg>\n' +
+'      </button>\n' +
+'\n' +
+'      <button class="btn-pill" id="fwd" aria-label="快进15秒">\n' +
+'        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\n' +
+'          <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>\n' +
+'          <path d="M21 3v5h-5"/>\n' +
+'        </svg>\n' +
+'        <span>+15s</span>\n' +
+'      </button>\n' +
+'    </div>\n' +
+'  </div>\n' +
+'</main>\n' +
+'\n' +
+'<div class="spectrum-slot-bottom" id="spectrumSlotBottom">\n' +
+'  <canvas class="spectrum-canvas" id="spectrumBottom"></canvas>\n' +
+'</div>\n' +
+'\n' +
+'<audio id="audio" preload="metadata"></audio>\n' +
+'\n' +
+audioDataScript +
+'<script>' + coreJS + '<\/script>\n' +
+'</body>\n' +
+'</html>';
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = '毛玻璃音乐卡片.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+
+    saveBtn.querySelector('span').textContent = '已保存 ✓';
+    setTimeout(function(){
+      saveBtn.querySelector('span').textContent = '保存网页';
+    }, 1600);
+  } catch (err) {
+    console.error(err);
+    alert('保存失败：' + err.message);
+    saveBtn.querySelector('span').textContent = '保存网页';
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+</script>
+
+</body>
+</html>
